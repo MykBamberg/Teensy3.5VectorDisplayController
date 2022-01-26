@@ -2,7 +2,7 @@
 using System.Windows.Forms;
 using System.IO.Ports;
 
-namespace Asteroids
+namespace VectorDisplay
 {
     public static class VectorOutput
     {
