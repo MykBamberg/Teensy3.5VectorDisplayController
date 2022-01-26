@@ -19,4 +19,6 @@ Step 4:
   the 3rd is the X-coordinate of the line ending and  
   the 3rd is the Y-coordinate of the line ending.  
 Step 5:  
+  Connect the DAC0 and DAC1 pins of your Teensy to an oscilloscope.  
+Step 5:  
   Select the COM-port of your Teensy when starting the program.  
