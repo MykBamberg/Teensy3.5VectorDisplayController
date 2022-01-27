@@ -22,3 +22,5 @@ Step 5:
   Connect the DAC0 and DAC1 pins of your Teensy to an oscilloscope.  
 Step 6:  
   Select the COM-port of your Teensy when starting the program.  
+
+Note: You'll need to reference "System.IO.Ports" and "WindowsForms" in your project! 
