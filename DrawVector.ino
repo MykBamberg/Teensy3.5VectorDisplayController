@@ -29,12 +29,12 @@ void loop()
 
 void serialEvent()
 {
-  if(Serial.peek() < 60)
+  if(Serial.peek() < 0x60)
   {
     while(Serial.available())
     {
       Serial.read();
-      if(Serial.peek() >= 60)
+      if(Serial.peek() >= 0x60)
       {
         break;
       }
