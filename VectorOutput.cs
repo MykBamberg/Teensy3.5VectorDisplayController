@@ -28,31 +28,30 @@ namespace VectorDisplay
             return prompt.ShowDialog() == DialogResult.OK && (comboBox.Text != "") ? comboBox.Text : null;
         }
 
-        public static void DrawFrame(int[][] frame, string comPort)
+        public static void DrawFrame(ushort[][] frame, string comPort)
         {
             if (frame.Length > 0)
             {
-                string outBuffer = "|"
-                    + ((ushort)Math.Max(Math.Min(frame[0][0], 0xFFF), 0)).ToString("X3")
-                    + ((ushort)Math.Max(Math.Min(frame[0][1], 0xFFF), 0)).ToString("X3")
-                    + ((ushort)Math.Max(Math.Min(frame[0][2], 0xFFF), 0)).ToString("X3")
-                    + ((ushort)Math.Max(Math.Min(frame[0][3], 0xFFF), 0)).ToString("X3")
-                    + "~";
-                for (int i = 1; i < frame.Length; i++)
+                char[] outBuffer = new char[frame.Length * 9 + 9];
+                for (int i = 0; i < frame.Length; i++)
                 {
-                    outBuffer += "|"
-                        + ((ushort)Math.Max(Math.Min(frame[i][0], 0xFFF), 0)).ToString("X3")
-                        + ((ushort)Math.Max(Math.Min(frame[i][1], 0xFFF), 0)).ToString("X3")
-                        + ((ushort)Math.Max(Math.Min(frame[i][2], 0xFFF), 0)).ToString("X3")
-                        + ((ushort)Math.Max(Math.Min(frame[i][3], 0xFFF), 0)).ToString("X3")
-                        + " ";
+                    outBuffer[i * 9] = '|';
+                    outBuffer[i * 9 + 1] = (char)((frame[i][0] % 64) + 32);
+                    outBuffer[i * 9 + 2] = (char)((frame[i][0] >> 6) + 32);
+                    outBuffer[i * 9 + 3] = (char)((frame[i][1] % 64) + 32);
+                    outBuffer[i * 9 + 4] = (char)((frame[i][1] >> 6) + 32);
+                    outBuffer[i * 9 + 5] = (char)((frame[i][2] % 64) + 32);
+                    outBuffer[i * 9 + 6] = (char)((frame[i][2] >> 6) + 32);
+                    outBuffer[i * 9 + 7] = (char)((frame[i][3] % 64) + 32);
+                    outBuffer[i * 9 + 8] = (char)((frame[i][3] >> 6) + 32);
                 }
+                outBuffer[0] = '~';
                 try
                 {
                     using (SerialPort Serial = new SerialPort(comPort, 50000000))
                     {
                         Serial.Open();
-                        Serial.Write(outBuffer);
+                        Serial.Write(new string(outBuffer));
                         Serial.Close();
                     }
                 }
