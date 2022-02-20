@@ -1,5 +1,5 @@
 # Teensy3.5VectorDisplayController
-This code allows you to use an Oscilloscope with an X-Y-mode as a vector display.
+This code allows you to use a Teensy 3.5 (3.6 would probably work to but I haven't tested it) and a vectorscope (oscilloscope with an X-Y-mode) as a vector display.
 
 ---
 How to use:
