@@ -29,7 +29,7 @@ void loop()
 
 void serialEvent()
 {
-  if(Serial.peek() < 0x60)
+  if(Serial.available() > 8 && Serial.peek() < 0x60)
   {
     while(Serial.available())
     {
@@ -40,7 +40,7 @@ void serialEvent()
       }
     }
   }
-  while(Serial.available() > 8)
+  while(Serial.available() > 8 && Serial.peek() >= 0x60)
   {
     Serial.readBytes(inBuffer, 9);
     lines *= (inBuffer[0] != '~') * (lines < 0x3BFF);
