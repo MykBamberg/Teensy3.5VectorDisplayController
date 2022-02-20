@@ -1,25 +1,24 @@
-char            inBuffer[14];
-byte            inPos = 0;
+#include "kinetis.h"
+#include "analog.c"
 
 uint16_t        bufferedLines[0xf000];
 uint16_t        lines = 0;
-uint32_t        pathLengh;
-byte            res = 1;
-
-#define         xpin  A21
-#define         ypin  A22
+char            inBuffer[9];
 
 void setup()
 {
-  analogWriteResolution(12);
   Serial.begin(5000000);
+  SIM_SCGC2 |= SIM_SCGC2_DAC0;
+  DAC0_C0 = DAC_C0_DACEN | DAC_C0_DACRFS;
+  SIM_SCGC2 |= SIM_SCGC2_DAC1;
+  DAC1_C0 = DAC_C0_DACEN | DAC_C0_DACRFS;
 }
 
 void loop()
 {
   for(long i = (long)lines - 1; i > -1; i--)
   {
-    if(Serial.available() > 0)
+    if(Serial.available() > 8)
     {
       serialEvent();
       break;
@@ -30,74 +29,51 @@ void loop()
 
 void serialEvent()
 {
-  while(Serial.available())
+  if(Serial.peek() < 60)
   {
-    inBuffer[inPos] = Serial.read();
-    
-    inPos++;
-    inPos *= (inBuffer[0] == '|');
-    if (inPos > 13)
+    while(Serial.available())
     {
-      lines *= (inBuffer[13] != '~') * (pathLengh < 0b10000000000000000000);
-      pathLengh *= (lines != 0);
-      for (byte i = 1; i < 13; i++)
+      Serial.read();
+      if(Serial.peek() >= 60)
       {
-        inBuffer[i] =   (inBuffer[i] >= '1') +
-                        (inBuffer[i] >= '2') +
-                        (inBuffer[i] >= '3') +
-                        (inBuffer[i] >= '4') +
-                        (inBuffer[i] >= '5') +
-                        (inBuffer[i] >= '6') +
-                        (inBuffer[i] >= '7') +
-                        (inBuffer[i] >= '8') +
-                        (inBuffer[i] >= '9') +
-                        (inBuffer[i] >= 'A') +
-                        (inBuffer[i] >= 'B') +
-                        (inBuffer[i] >= 'C') +
-                        (inBuffer[i] >= 'D') +
-                        (inBuffer[i] >= 'E') +
-                        (inBuffer[i] >= 'F');
-                        
+        break;
       }
-      bufferedLines[0 + 4 * lines] = inBuffer[3]  + (inBuffer[2]  << 4) + (inBuffer[1]  << 8);
-      bufferedLines[1 + 4 * lines] = inBuffer[6]  + (inBuffer[5]  << 4) + (inBuffer[4]  << 8);
-      bufferedLines[2 + 4 * lines] = inBuffer[9]  + (inBuffer[8]  << 4) + (inBuffer[7]  << 8);
-      bufferedLines[3 + 4 * lines] = inBuffer[12] + (inBuffer[11] << 4) + (inBuffer[10] << 8);
-      
-      pathLengh +=  abs(bufferedLines[0 + 4 * lines] - 
-                        bufferedLines[2 + 4 * lines])+ 
-                    abs(bufferedLines[1 + 4 * lines] - 
-                        bufferedLines[3 + 4 * lines])+
-                        0x60;
-      lines++;
-      inPos = 0;
     }
   }
-  res = ((pathLengh >> 14) + 1);
+  while(Serial.available() > 8)
+  {
+    Serial.readBytes(inBuffer, 9);
+    lines *= (inBuffer[0] != '~') * (lines < 0x3BFF);
+    bufferedLines[0 + 4 * lines] = inBuffer[1]  + (inBuffer[2]  << 6) - 0x820;
+    bufferedLines[1 + 4 * lines] = inBuffer[3]  + (inBuffer[4]  << 6) - 0x820;
+    bufferedLines[2 + 4 * lines] = inBuffer[5]  + (inBuffer[6]  << 6) - 0x820;
+    bufferedLines[3 + 4 * lines] = inBuffer[7]  + (inBuffer[8]  << 6) - 0x820;
+    lines++;
+  }
 }
 
-void line(long x0, long y0, long x1, long y1 ) 
+void line(int x0, int y0, int x1, int y1 ) 
 {
-  x0 = x0 / res;
-  x1 = x1 / res;
-  y0 = y0 / res;
-  y1 = y1 / res;
+  __asm__ ("usat    %[value], #12, %[value]\n\t" : [value] "+r" (x0));
+  __asm__ ("usat    %[value], #12, %[value]\n\t" : [value] "+r" (y0));
+  __asm__ ("usat    %[value], #12, %[value]\n\t" : [value] "+r" (x1));
+  __asm__ ("usat    %[value], #12, %[value]\n\t" : [value] "+r" (y1));
   
-  long dx = abs(x1 - x0);
-  long sx = x0 < x1 ? 1 : -1;
-  long dy = -abs(y1 - y0);
-  long sy = y0 < y1 ? 1 : -1;
-  long err = dx + dy;
-  long e2;
+  int dx = abs(x1 - x0);
+  int sx = x0 < x1 ? 1 : -1;
+  int dy = -abs(y1 - y0);
+  int sy = y0 < y1 ? 1 : -1;
+  int err = dx + dy;
+  int e2;
   
   while (x0 != x1 or y0 != y1) 
   {
-    analogWrite(xpin, x0 * res);
-    analogWrite(ypin, y0 * res);
-    e2 = err << 2;
+    *(int16_t *)&(DAC0_DAT0L) = x0 ;
+    *(int16_t *)&(DAC1_DAT0L) = y0 ;
+    e2 = err << 1;
     err += dy * (e2 > dy);
-    x0 += sx * (e2 > dy);
+    x0  += sx * (e2 > dy);
     err += dx * (e2 < dx);
-    y0 += sy * (e2 < dx);
+    y0  += sy * (e2 < dx);
   }
 }
