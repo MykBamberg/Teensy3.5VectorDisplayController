@@ -8,7 +8,14 @@
   </PropertyGroup>
 
  <PropertyGroup>
-    <Version>1.2.0</Version>
+    <Version>1.0.0</Version>
+    <Authors>00000000839a8e6886ab5951d76f411475428af</Authors>
+    <Description>This package allows you to use an oscilloscope with an X-Y-mode as a vector display.</Description>
+    <Copyright></Copyright>
+    <RepositoryUrl>https://github.com/00000000839a8e6886ab5951d76f411475428af/Teensy3.5VectorDisplayController</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>vector graphics; vector monitor</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
   </PropertyGroup>
 
   <ItemGroup>
