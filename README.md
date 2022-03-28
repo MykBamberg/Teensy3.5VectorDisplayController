@@ -1,4 +1,4 @@
-[outdated; will be completely rewritten as soon as the nuget package will be avalible on https://www.nuget.org/packages/VectorOutput/1.0.0]
+[outdated; will be completely rewritten as soon as the nuget package is be avalible on https://www.nuget.org/packages/VectorOutput/1.0.0]
 
 # Teensy3.5VectorDisplayController
 This code allows you to use a Teensy 3.5 (3.6 would probably work to but I haven't tested it) and a vectorscope (oscilloscope with an X-Y-mode) as a vector display.
