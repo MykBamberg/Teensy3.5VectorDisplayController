@@ -27,10 +27,10 @@ private VectorOutput vOut;
 ```
 Request the COM port of your Teesny and create a new ```VectorOutput``` instance:
 ```cs
-string? comPort = VectorOutput.GetComPort();
+string? comPort = VectorOutput.ComPortForm();
 while (comPort == null)
 {
-    comPort = VectorOutput.GetComPort();
+    comPort = VectorOutput.ComPortForm();
 }
 
 try
