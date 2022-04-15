@@ -13,10 +13,10 @@ Note: Although the file is called "DrawVector.ino" in both cases, the firmware i
 4. Hit the upload button and wait for the code to compile and upload
 
 # Hardware Configuration
-Connect the pin labeled "DAC0" to the vektorscope's "X"-channel and the pin labeled "DAC1" to the "Y"-Channel. Afterward, you have to connect the Teesny's ground with the vectorscope's ground. ([Teensy 3.5 pinout](https://www.pjrc.com/teensy/card8a_rev3_web.pdf))
+Connect the pin labeled "DAC0" to the vectorscope's "X"-channel and the pin labeled "DAC1" to the "Y"-Channel. Afterward, you have to connect the Teesny's ground with the vectorscope's ground. ([Teensy 3.5 pinout](https://www.pjrc.com/teensy/card8a_rev3_web.pdf))
 
 # NuGet Package
-[NuGet-Release](https://www.nuget.org/packages/VectorOutput/1.0.0)
+[NuGet-Release](https://www.nuget.org/packages/VectorOutput/1.1.1)
 
 Package Manager: ```Install-Package VectorOutput -Version 1.1.1```
 
