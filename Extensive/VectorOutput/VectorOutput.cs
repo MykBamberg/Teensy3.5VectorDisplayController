@@ -290,7 +290,7 @@ public class VectorOutput : IDisposable
                 new char[] 
                 { 
                     'q', 
-                    (char)(Math.Max(res, (byte)8) + 32), 
+                    (char)(Math.Min(res, (byte)8) + 32), 
                     ' ', ' ', ' ', ' ', ' ', ' ', ' ' 
                 }, 0, 9);
         }
