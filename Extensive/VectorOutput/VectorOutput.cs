@@ -1,38 +1,17 @@
 ﻿using System.Windows.Forms;
 using System.IO.Ports;
 
-
 public class VectorOutput : IDisposable
 {
-    private SerialPort Serial;
+    public delegate void    ErrorMessenger(string Error);
+    private bool            disposedValue;
 
-    private bool[] SpriteEnabled = new bool[] { false, false, false, false, false, false, false, false };
+    private ErrorMessenger? _ErrorMessenger = null;
+    private SerialPort      Serial;
 
-    private int[][] SpritePosition = new int[][] { new int[] { 0, 0 }, new int[] { 0, 0 }, new int[] { 0, 0 }, new int[] { 0, 0 }, new int[] { 0, 0 }, new int[] { 0, 0 }, new int[] { 0, 0 }, new int[] { 0, 0 } };
+    public ushort[][]       Rectangles =    new ushort[0][];
+    public ushort[][]       Lines =         new ushort[0][];
 
-    private ushort[] CursorPosition = new ushort[] { 0, 0 };
-
-    bool CursorEnabled = false;
-
-    ushort CursorIntensity = 30;
-
-    private ushort[][][] Sprites = new ushort[8][][];
-
-    private ushort[][] _Rectangles = new ushort[0][];
-
-    private ushort[][] _Lines = new ushort[0][];
-
-    private bool StaticChange = false;
-
-    private bool[] SpriteChange = new bool[] { false, false, false, false, false, false, false, false };
-
-    private bool[] SpritePositionChange = new bool[] { false, false, false, false, false, false, false, false };
-
-    private bool SpriteEnabledChange = false;
-
-    private bool[] SpriteStamp = new bool[] { false, false, false, false, false, false, false, false };
-
-    private bool CursorChange = false;
 
     public VectorOutput(string ComPort)
     {
@@ -47,88 +26,338 @@ public class VectorOutput : IDisposable
         _ErrorMessenger = errorMessenger;
     }
 
-    public void SetSprite(ushort[][] lines, int index, bool enabled)
+    public void DrawFrame()
     {
-        Sprites[index] = lines.Where(a => a.Max() <= 4095).ToArray();
-        SpriteChange[index] = true;
-        SetSpriteEnabled(index, enabled);
-        SetSpritePosition(0, 0, index);
-    }
+        char[] outBuffer = new char[0];
 
-    public void SetSpritePosition(int x, int y, int index)
-    {
-        SpritePosition[index] = new int[] { x, y };
-        SpritePositionChange[index] = true;
-    }
+        outBuffer = new char[(Lines.Length + Rectangles.Length) * 9];
 
-    public void StampSprite(int index)
-    {
-        SpriteStamp[index] = true;
-    }
+        if (outBuffer.Length > 0)
+        {
+            for (int i = 0; i < Lines.Length; i++)
+            {
+                outBuffer[i * 9] = '|';
+                outBuffer[i * 9 + 1] = (char)((Lines[i][0] % 64) + 32);
+                outBuffer[i * 9 + 2] = (char)((Lines[i][0] >> 6) + 32);
+                outBuffer[i * 9 + 3] = (char)((Lines[i][1] % 64) + 32);
+                outBuffer[i * 9 + 4] = (char)((Lines[i][1] >> 6) + 32);
+                outBuffer[i * 9 + 5] = (char)((Lines[i][2] % 64) + 32);
+                outBuffer[i * 9 + 6] = (char)((Lines[i][2] >> 6) + 32);
+                outBuffer[i * 9 + 7] = (char)((Lines[i][3] % 64) + 32);
+                outBuffer[i * 9 + 8] = (char)((Lines[i][3] >> 6) + 32);
+            }
+            for (int i = 0; i < Rectangles.Length; i++)
+            {
+                outBuffer[(Lines.Length + i) * 9] = 'r';
+                outBuffer[(Lines.Length + i) * 9 + 1] = (char)((Rectangles[i][0] % 64) + 32);
+                outBuffer[(Lines.Length + i) * 9 + 2] = (char)((Rectangles[i][0] >> 6) + 32);
+                outBuffer[(Lines.Length + i) * 9 + 3] = (char)((Rectangles[i][1] % 64) + 32);
+                outBuffer[(Lines.Length + i) * 9 + 4] = (char)((Rectangles[i][1] >> 6) + 32);
+                outBuffer[(Lines.Length + i) * 9 + 5] = (char)((Rectangles[i][2] % 64) + 32);
+                outBuffer[(Lines.Length + i) * 9 + 6] = (char)((Rectangles[i][2] >> 6) + 32);
+                outBuffer[(Lines.Length + i) * 9 + 7] = (char)((Rectangles[i][3] % 64) + 32);
+                outBuffer[(Lines.Length + i) * 9 + 8] = (char)((Rectangles[i][3] >> 6) + 32);
+            }
+        }
+        else
+        {
+            outBuffer = new char[] { '|', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ' };
+        }
+        outBuffer[0] += (char)2;
 
-    public void SetSpriteEnabled(int index, bool b)
-    {
-        SpriteEnabled[index] = b;
-        SpriteEnabledChange = true;
-    }
-
-    public void SetCursor(ushort x, ushort y, ushort Intensity, bool enabled)
-    {
-        CursorChange = true;
-        CursorPosition = new ushort[] { x, y };
-        CursorIntensity = Intensity;
-        CursorEnabled = enabled;
+        try
+        {
+            Serial.Write(outBuffer, 0, outBuffer.Length);
+        }
+        catch (Exception ex)
+        {
+            if (_ErrorMessenger != null)
+            {
+                _ErrorMessenger.Invoke(ex.Message);
+            }
+        }
     }
 
     public void AddLines(ushort[][] lines)
     {
-        _Lines = _Lines.Concat(lines).ToArray();
-        StaticChange = true;
+        Lines = Lines.Concat(lines).ToArray();
+
+        char[] outBuffer = new char[lines.Length * 9];
+
+        for (int i = 0; i < lines.Length; i++)
+        {
+            outBuffer[i * 9] = '|';
+            outBuffer[i * 9 + 1] = (char)((lines[i][0] % 64) + 32);
+            outBuffer[i * 9 + 2] = (char)((lines[i][0] >> 6) + 32);
+            outBuffer[i * 9 + 3] = (char)((lines[i][1] % 64) + 32);
+            outBuffer[i * 9 + 4] = (char)((lines[i][1] >> 6) + 32);
+            outBuffer[i * 9 + 5] = (char)((lines[i][2] % 64) + 32);
+            outBuffer[i * 9 + 6] = (char)((lines[i][2] >> 6) + 32);
+            outBuffer[i * 9 + 7] = (char)((lines[i][3] % 64) + 32);
+            outBuffer[i * 9 + 8] = (char)((lines[i][3] >> 6) + 32);
+        }
+
+        try
+        {
+            Serial.Write(outBuffer, 0, outBuffer.Length);
+        }
+        catch (Exception ex)
+        {
+            if (_ErrorMessenger != null)
+            {
+                _ErrorMessenger.Invoke(ex.Message);
+            }
+        }
+    }
+    public void AddLines(ushort[] line)
+    {
+        AddLines(new ushort[][] { line });
     }
 
     public void AddRectangles(ushort[][] rectangles)
     {
-        _Rectangles = _Rectangles.Concat(rectangles).ToArray();
-        StaticChange = true;
+        Rectangles = Rectangles.Concat(rectangles).ToArray();
+
+        char[] outBuffer = new char[rectangles.Length * 9];
+
+        for (int i = 0; i < rectangles.Length; i++)
+        {
+            outBuffer[i * 9] = 'r';
+            outBuffer[i * 9 + 1] = (char)((rectangles[i][0] % 64) + 32);
+            outBuffer[i * 9 + 2] = (char)((rectangles[i][0] >> 6) + 32);
+            outBuffer[i * 9 + 3] = (char)((rectangles[i][1] % 64) + 32);
+            outBuffer[i * 9 + 4] = (char)((rectangles[i][1] >> 6) + 32);
+            outBuffer[i * 9 + 5] = (char)((rectangles[i][2] % 64) + 32);
+            outBuffer[i * 9 + 6] = (char)((rectangles[i][2] >> 6) + 32);
+            outBuffer[i * 9 + 7] = (char)((rectangles[i][3] % 64) + 32);
+            outBuffer[i * 9 + 8] = (char)((rectangles[i][3] >> 6) + 32);
+        }
+
+        try
+        {
+            Serial.Write(outBuffer, 0, outBuffer.Length);
+        }
+        catch (Exception ex)
+        {
+            if (_ErrorMessenger != null)
+            {
+                _ErrorMessenger.Invoke(ex.Message);
+            }
+        }
     }
-
-    public delegate void ErrorMessenger(string Error);
-
-    private ErrorMessenger? _ErrorMessenger = null;
-
-    public ErrorMessenger? errorMessenger
+    public void AddRectangles(ushort[] rectangle)
     {
-        get { return _ErrorMessenger; }
-        set { _ErrorMessenger = value; }
+        AddLines(new ushort[][] { rectangle });
     }
 
-    public ushort[][] Rectangles
+    public void SetSpriteLines(ushort[][] lines, int index)
     {
-        get
+        index %= 8;
+        char[] outBuffer = new char[lines.Length * 9];
+
+        for (int i = 0; i < lines.Length; i++)
         {
-            return _Rectangles;
+            outBuffer[i * 9] = (char)(index + 'd');
+            outBuffer[i * 9 + 1] = (char)((lines[i][0] % 64) + 32);
+            outBuffer[i * 9 + 2] = (char)((lines[i][0] >> 6) + 32);
+            outBuffer[i * 9 + 3] = (char)((lines[i][1] % 64) + 32);
+            outBuffer[i * 9 + 4] = (char)((lines[i][1] >> 6) + 32);
+            outBuffer[i * 9 + 5] = (char)((lines[i][2] % 64) + 32);
+            outBuffer[i * 9 + 6] = (char)((lines[i][2] >> 6) + 32);
+            outBuffer[i * 9 + 7] = (char)((lines[i][3] % 64) + 32);
+            outBuffer[i * 9 + 8] = (char)((lines[i][3] >> 6) + 32);
         }
-        set
+
+        try
         {
-            _Rectangles = value != null ? value.Where(a => a.Max() <= 4095).ToArray() : new ushort[0][];
-            StaticChange = true;
+            Serial.Write(new char[] { 'l', (char)(index + 'd'), ' ', ' ', ' ', ' ', ' ', ' ', ' ' }, 0, 9);
+            Serial.Write(outBuffer, 0, outBuffer.Length);
+        }
+        catch (Exception ex)
+        {
+            if (_ErrorMessenger != null)
+            {
+                _ErrorMessenger.Invoke(ex.Message);
+            }
         }
     }
 
-    public ushort[][] Lines
+    public void SetSpritePosition(int index, short x, short y)
     {
-        get
+        try
         {
-            return _Lines;
+            Serial.Write(
+                new char[] 
+                { 
+                    'p', 
+                    (char)(index + 'd'), 
+                    x < 0 ? '!' : ' ',
+                    (char)((Math.Abs(x) % 64) + 32),
+                    (char)((Math.Abs(x) >> 6) + 32),
+                    y < 0 ? '!' : ' ',
+                    (char)((Math.Abs(y) % 64) + 32),
+                    (char)((Math.Abs(y) >> 6) + 32),
+                    ' '
+                }, 0, 9);
         }
-        set
+        catch (Exception ex)
         {
-            _Lines = value != null ? value.Where(a => a.Max() <= 4095).ToArray() : new ushort[0][];
-            StaticChange = true;
+            if (_ErrorMessenger != null)
+            {
+                _ErrorMessenger.Invoke(ex.Message);
+            }
         }
     }
 
-    public static string? GetComPort()
+    public void StampSprite(int index)
+    {
+        try
+        {
+            Serial.Write(new char[] { 'n', (char)(index + 'd'), ' ', ' ', ' ', ' ', ' ', ' ', ' ' }, 0, 9);
+        }
+        catch (Exception ex)
+        {
+            if (_ErrorMessenger != null)
+            {
+                _ErrorMessenger.Invoke(ex.Message);
+            }
+        }
+    }
+    public void StampSprite(int index, short x, short y)
+    {
+        try
+        {
+            Serial.Write(
+                new char[]
+                {
+                    'p',
+                    (char)(index + 'd'),
+                    x < 0 ? '!' : ' ',
+                    (char)((Math.Abs(x) % 64) + 32),
+                    (char)((Math.Abs(x) >> 6) + 32),
+                    y < 0 ? '!' : ' ',
+                    (char)((Math.Abs(y) % 64) + 32),
+                    (char)((Math.Abs(y) >> 6) + 32),
+                    ' '
+                }, 0, 9);
+            Serial.Write(new char[] { 'n', (char)(index + 'd'), ' ', ' ', ' ', ' ', ' ', ' ', ' ' }, 0, 9);
+        }
+        catch (Exception ex)
+        {
+            if (_ErrorMessenger != null)
+            {
+                _ErrorMessenger.Invoke(ex.Message);
+            }
+        }
+    }
+
+    public void SetSpritesEnabled(bool[] enabled)
+    {
+        if (enabled.Length != 8)
+        {
+            throw new Exception("bool[] enabled has to have a length of 8");
+        }
+        try
+        {
+            Serial.Write(
+                new char[] 
+                { 
+                    'm',
+                    enabled[0] ? '!' : ' ',
+                    enabled[1] ? '!' : ' ',
+                    enabled[2] ? '!' : ' ',
+                    enabled[3] ? '!' : ' ',
+                    enabled[4] ? '!' : ' ',
+                    enabled[5] ? '!' : ' ',
+                    enabled[6] ? '!' : ' ',
+                    enabled[7] ? '!' : ' ',
+                }, 0, 9);
+        }
+        catch (Exception ex)
+        {
+            if (_ErrorMessenger != null)
+            {
+                _ErrorMessenger.Invoke(ex.Message);
+            }
+        }
+    }
+
+    public void Setres(byte res)
+    {
+        try
+        {
+            Serial.Write(
+                new char[] 
+                { 
+                    'q', 
+                    (char)(Math.Max(res, (byte)8) + 32), 
+                    ' ', ' ', ' ', ' ', ' ', ' ', ' ' 
+                }, 0, 9);
+        }
+        catch (Exception ex)
+        {
+            if (_ErrorMessenger != null)
+            {
+                _ErrorMessenger.Invoke(ex.Message);
+            }
+        }
+    }
+
+    public void SetCursor(ushort x, ushort y, ushort intensity, bool enabled)
+    {
+        try
+        {
+            Serial.Write(new char[]
+                        {
+                            'c',
+                            (char)((x % 64) + 32),
+                            (char)((x >> 6) + 32),
+                            (char)((y % 64) + 32),
+                            (char)((y >> 6) + 32),
+                            (char)((intensity % 64) + 32),
+                            (char)((intensity >> 6) + 32),
+                            enabled ? '!' : ' ',
+                            ' '
+                        }, 0, 9);
+        }
+        catch (Exception ex)
+        {
+            if (_ErrorMessenger != null)
+            {
+                _ErrorMessenger.Invoke(ex.Message);
+            }
+        }
+    }
+
+    public void Clear()
+    {
+        try
+        {
+            Serial.Write("~        " +
+                         "c        " +
+                         "q        " +
+                         "ld       " +
+                         "le       " +
+                         "lf       " +
+                         "lg       " +
+                         "lh       " +
+                         "li       " +
+                         "lj       " +
+                         "lk       " );
+
+            Rectangles = new ushort[0][];
+            Lines = new ushort[0][];
+        }
+        catch (Exception ex)
+        {
+            if (_ErrorMessenger != null)
+            {
+                _ErrorMessenger.Invoke(ex.Message);
+            }
+        }
+    }
+
+    public static string? ComPortForm()
     {
         Form prompt = new Form()
         {
@@ -167,377 +396,27 @@ public class VectorOutput : IDisposable
         return comboBox.Text;
     }
 
-    public void DrawFrame()
+
+    protected virtual void Dispose(bool disposing)
     {
-        char[] outBuffer = new char[0];
-        char[] outBufferSprites = new char[0];
-        char[] outBufferStamps = new char[0];
-        char[] outBufferSpritePosition = new char[0];
-        char[] outBufferCursor = new char[0];
-
-        if (StaticChange)
+        if (!disposedValue)
         {
-            outBuffer = new char[(_Lines.Length + _Rectangles.Length) * 9];
-            if (outBuffer.Length > 0)
+            if (disposing)
             {
-                for (int i = 0; i < _Lines.Length; i++)
-                {
-                    outBuffer[i * 9] = '|';
-                    outBuffer[i * 9 + 1] = (char)((_Lines[i][0] % 64) + 32);
-                    outBuffer[i * 9 + 2] = (char)((_Lines[i][0] >> 6) + 32);
-                    outBuffer[i * 9 + 3] = (char)((_Lines[i][1] % 64) + 32);
-                    outBuffer[i * 9 + 4] = (char)((_Lines[i][1] >> 6) + 32);
-                    outBuffer[i * 9 + 5] = (char)((_Lines[i][2] % 64) + 32);
-                    outBuffer[i * 9 + 6] = (char)((_Lines[i][2] >> 6) + 32);
-                    outBuffer[i * 9 + 7] = (char)((_Lines[i][3] % 64) + 32);
-                    outBuffer[i * 9 + 8] = (char)((_Lines[i][3] >> 6) + 32);
-                }
-                for (int i = 0; i < _Rectangles.Length; i++)
-                {
-                    outBuffer[(_Lines.Length + i) * 9] = 'r';
-                    outBuffer[(_Lines.Length + i) * 9 + 1] = (char)((_Rectangles[i][0] % 64) + 32);
-                    outBuffer[(_Lines.Length + i) * 9 + 2] = (char)((_Rectangles[i][0] >> 6) + 32);
-                    outBuffer[(_Lines.Length + i) * 9 + 3] = (char)((_Rectangles[i][1] % 64) + 32);
-                    outBuffer[(_Lines.Length + i) * 9 + 4] = (char)((_Rectangles[i][1] >> 6) + 32);
-                    outBuffer[(_Lines.Length + i) * 9 + 5] = (char)((_Rectangles[i][2] % 64) + 32);
-                    outBuffer[(_Lines.Length + i) * 9 + 6] = (char)((_Rectangles[i][2] >> 6) + 32);
-                    outBuffer[(_Lines.Length + i) * 9 + 7] = (char)((_Rectangles[i][3] % 64) + 32);
-                    outBuffer[(_Lines.Length + i) * 9 + 8] = (char)((_Rectangles[i][3] >> 6) + 32);
-                }
+                Serial.Close();
+                ((IDisposable)Serial).Dispose();
             }
-            else
-            {
-                outBuffer = new char[] { '|', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ' };
-            }
-            outBuffer[0] += (char)2;
-        }
 
-        if (SpriteChange.Contains(true) || SpriteEnabledChange)
-        {
-            List<char> tempSpriteOutBuffer = new List<char>();
-            for (int i = 0; i < 8; i++)
-            {
-                if (SpriteChange[i])
-                {
-                    tempSpriteOutBuffer.Add('l');
-                    tempSpriteOutBuffer.Add((char)(100 + i)); //100 is 'd' in ASCII
-                    tempSpriteOutBuffer.AddRange(new char[] { ' ', ' ', ' ', ' ', ' ', ' ', ' ' });
-                    for (int j = 0; j < Sprites[i].Length; j++)
-                    {
-                        tempSpriteOutBuffer.Add((char)(100 + i));
-                        tempSpriteOutBuffer.Add((char)((Sprites[i][j][0] % 64) + 32));
-                        tempSpriteOutBuffer.Add((char)((Sprites[i][j][0] >> 6) + 32));
-                        tempSpriteOutBuffer.Add((char)((Sprites[i][j][1] % 64) + 32));
-                        tempSpriteOutBuffer.Add((char)((Sprites[i][j][1] >> 6) + 32));
-                        tempSpriteOutBuffer.Add((char)((Sprites[i][j][2] % 64) + 32));
-                        tempSpriteOutBuffer.Add((char)((Sprites[i][j][2] >> 6) + 32));
-                        tempSpriteOutBuffer.Add((char)((Sprites[i][j][3] % 64) + 32));
-                        tempSpriteOutBuffer.Add((char)((Sprites[i][j][3] >> 6) + 32));
-                    }
-                }
-            }
-            tempSpriteOutBuffer.Add('m');
-            for (int i = 0; i < 8; i++)
-            {
-                tempSpriteOutBuffer.Add(SpriteEnabled[i] ? '!' : ' ');
-            }
-            outBufferSprites = tempSpriteOutBuffer.ToArray();
-        }
+            Rectangles = new ushort[0][];
+            Lines = new ushort[0][];
 
-        if (SpritePositionChange.Contains(true))
-        {
-            List<char> tempPosOutBuffer = new List<char>();
-            for (int i = 0; i < 8; i++)
-            {
-                if (SpritePositionChange[i])
-                {
-                    tempPosOutBuffer.Add('p');
-                    tempPosOutBuffer.Add((char)(100 + i));
-                    tempPosOutBuffer.Add(SpritePosition[i][0] > 0 ? ' ' : '!');
-                    tempPosOutBuffer.Add((char)((Math.Abs(SpritePosition[i][0]) % 64) + 32));
-                    tempPosOutBuffer.Add((char)((Math.Abs(SpritePosition[i][0]) >> 6) + 32));
-                    tempPosOutBuffer.Add(SpritePosition[i][1] > 0 ? ' ' : '!');
-                    tempPosOutBuffer.Add((char)((Math.Abs(SpritePosition[i][1]) % 64) + 32));
-                    tempPosOutBuffer.Add((char)((Math.Abs(SpritePosition[i][1]) >> 6) + 32));
-                    tempPosOutBuffer.Add(' ');
-                }
-            }
-            outBufferSpritePosition = tempPosOutBuffer.ToArray();
-        }
-
-        if (SpriteStamp.Contains(true))
-        {
-            List<char> tempStampOutBuffer = new List<char>();
-            for (int i = 0; i < 8; i++)
-            {
-                if (SpriteStamp[i])
-                {
-                    tempStampOutBuffer.Add('n');
-                    tempStampOutBuffer.Add((char)(100 + i));
-                    tempStampOutBuffer.AddRange(new char[] { ' ', ' ', ' ', ' ', ' ', ' ', ' ' });
-                }
-            }
-            outBufferStamps = tempStampOutBuffer.ToArray();
-        }
-
-        if (CursorChange)
-        {
-            outBufferCursor = new char[]
-            {
-                'c',
-                (char)((CursorPosition[0] % 64) + 32),
-                (char)((CursorPosition[0] >> 6) + 32),
-                (char)((CursorPosition[1] % 64) + 32),
-                (char)((CursorPosition[1] >> 6) + 32),
-                (char)((CursorIntensity % 64) + 32),
-                (char)((CursorIntensity >> 6) + 32),
-                CursorEnabled ? '!' : ' ',
-                ' '
-            };
-        }
-
-        try
-        {
-            Serial.Write(outBuffer, 0, outBuffer.Length);
-            Serial.Write(outBufferSprites, 0, outBufferSprites.Length);
-            Serial.Write(outBufferSpritePosition, 0, outBufferSpritePosition.Length);
-            Serial.Write(outBufferStamps, 0, outBufferStamps.Length);
-            Serial.Write(outBufferCursor, 0, outBufferCursor.Length);
-
-            StaticChange = false;
-            SpriteEnabledChange = false;
-            CursorChange = false;
-            SpriteChange = new bool[] { false, false, false, false, false, false, false, false };
-            SpritePositionChange = SpriteChange;
-            SpriteStamp = SpriteChange;
-        }
-        catch (Exception ex)
-        {
-            if (_ErrorMessenger != null)
-            {
-                _ErrorMessenger.Invoke(ex.Message);
-            }
-        }
-    }
-
-    public void IUAddLines(ushort[][] lines)
-    {
-        Lines = Lines.Concat(lines).ToArray();
-
-        char[] outBuffer = new char[lines.Length * 9];
-
-        for (int i = 0; i < lines.Length; i++)
-        {
-            outBuffer[i * 9] = '|';
-            outBuffer[i * 9 + 1] = (char)((lines[i][0] % 64) + 32);
-            outBuffer[i * 9 + 2] = (char)((lines[i][0] >> 6) + 32);
-            outBuffer[i * 9 + 3] = (char)((lines[i][1] % 64) + 32);
-            outBuffer[i * 9 + 4] = (char)((lines[i][1] >> 6) + 32);
-            outBuffer[i * 9 + 5] = (char)((lines[i][2] % 64) + 32);
-            outBuffer[i * 9 + 6] = (char)((lines[i][2] >> 6) + 32);
-            outBuffer[i * 9 + 7] = (char)((lines[i][3] % 64) + 32);
-            outBuffer[i * 9 + 8] = (char)((lines[i][3] >> 6) + 32);
-        }
-
-        try
-        {
-            Serial.Write(outBuffer, 0, outBuffer.Length);
-        }
-        catch (Exception ex)
-        {
-            if (_ErrorMessenger != null)
-            {
-                _ErrorMessenger.Invoke(ex.Message);
-            }
-        }
-    }
-
-    public void IUAddRectangles(ushort[][] rectangles)
-    {
-        Rectangles = Rectangles.Concat(rectangles).ToArray();
-
-        char[] outBuffer = new char[rectangles.Length * 9];
-
-        for (int i = 0; i < rectangles.Length; i++)
-        {
-            outBuffer[i * 9] = 'r';
-            outBuffer[i * 9 + 1] = (char)((rectangles[i][0] % 64) + 32);
-            outBuffer[i * 9 + 2] = (char)((rectangles[i][0] >> 6) + 32);
-            outBuffer[i * 9 + 3] = (char)((rectangles[i][1] % 64) + 32);
-            outBuffer[i * 9 + 4] = (char)((rectangles[i][1] >> 6) + 32);
-            outBuffer[i * 9 + 5] = (char)((rectangles[i][2] % 64) + 32);
-            outBuffer[i * 9 + 6] = (char)((rectangles[i][2] >> 6) + 32);
-            outBuffer[i * 9 + 7] = (char)((rectangles[i][3] % 64) + 32);
-            outBuffer[i * 9 + 8] = (char)((rectangles[i][3] >> 6) + 32);
-        }
-
-        try
-        {
-            Serial.Write(outBuffer, 0, outBuffer.Length);
-        }
-        catch (Exception ex)
-        {
-            if (_ErrorMessenger != null)
-            {
-                _ErrorMessenger.Invoke(ex.Message);
-            }
-        }
-    }
-
-    public void IUAddLinesToSprite(ushort[][] lines, int index) //Instant Update
-    {
-        Sprites[index] = Sprites[index].Concat(lines).ToArray();
-        char[] outBuffer = new char[lines.Length * 9];
-        for (int i = 0; i < lines.Length; i++)
-        {
-            outBuffer[i * 9 + 0] = (char)(100 + i);
-            outBuffer[i * 9 + 1] = (char)((Lines[i][0] % 64) + 32);
-            outBuffer[i * 9 + 2] = (char)((Lines[i][0] >> 6) + 32);
-            outBuffer[i * 9 + 3] = (char)((Lines[i][1] % 64) + 32);
-            outBuffer[i * 9 + 4] = (char)((Lines[i][1] >> 6) + 32);
-            outBuffer[i * 9 + 5] = (char)((Lines[i][2] % 64) + 32);
-            outBuffer[i * 9 + 6] = (char)((Lines[i][2] >> 6) + 32);
-            outBuffer[i * 9 + 7] = (char)((Lines[i][3] % 64) + 32);
-            outBuffer[i * 9 + 8] = (char)((Lines[i][3] >> 6) + 32);
-        }
-
-        try
-        {
-            Serial.Write(outBuffer, 0, outBuffer.Length);
-
-            StaticChange = false;
-            SpriteEnabledChange = false;
-            SpriteChange = new bool[] { false, false, false, false, false, false, false, false };
-            SpritePositionChange = SpriteChange;
-            SpriteStamp = SpriteChange;
-        }
-        catch (Exception ex)
-        {
-            if (_ErrorMessenger != null)
-            {
-                _ErrorMessenger.Invoke(ex.Message);
-            }
-        }
-    }
-
-    public void IUSetSpritePosition(int x, int y, int index)
-    {
-        SpritePosition[index] = new int[] { x, y };
-        char[] outBuffer = new char[9];
-        outBuffer[0] = 'p';
-        outBuffer[1] = (char)(100 + index);
-        outBuffer[2] = x > 0 ? ' ' : '!';
-        outBuffer[3] = (char)((Math.Abs(x) % 64) + 32);
-        outBuffer[4] = (char)((Math.Abs(x) >> 6) + 32);
-        outBuffer[5] = y > 0 ? ' ' : '!';
-        outBuffer[6] = (char)((Math.Abs(y) % 64) + 32);
-        outBuffer[7] = (char)((Math.Abs(y) >> 6) + 32);
-        outBuffer[8] = (' ');
-
-        try
-        {
-            Serial.Write(outBuffer, 0, outBuffer.Length);
-        }
-        catch (Exception ex)
-        {
-            if (_ErrorMessenger != null)
-            {
-                _ErrorMessenger.Invoke(ex.Message);
-            }
-        }
-    }
-
-    public void IUSetres(byte res)
-    {
-        char[] outBuffer = new char[] { 'q', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ' };
-        if (res > 8) res = 8;
-        outBuffer[1] = (char)(res + 32);
-
-        try
-        {
-            Serial.Write(outBuffer, 0, outBuffer.Length);
-        }
-        catch (Exception ex)
-        {
-            if (_ErrorMessenger != null)
-            {
-                _ErrorMessenger.Invoke(ex.Message);
-            }
-        }
-    }
-
-    public void IUSetCursor(ushort x, ushort y, ushort Intensity, bool enabled)
-    {
-        CursorPosition = new ushort[] { x, y };
-        CursorIntensity = Intensity;
-        CursorEnabled = enabled;
-        char[] outBuffer = new char[]
-            {
-                'c',
-                (char)((CursorPosition[0] % 64) + 32),
-                (char)((CursorPosition[0] >> 6) + 32),
-                (char)((CursorPosition[1] % 64) + 32),
-                (char)((CursorPosition[1] >> 6) + 32),
-                (char)((CursorIntensity % 64) + 32),
-                (char)((CursorIntensity >> 6) + 32),
-                CursorEnabled ? '!' : ' ',
-                ' '
-            };
-        try
-        {
-            Serial.Write(outBuffer, 0, outBuffer.Length);
-        }
-        catch (Exception ex)
-        {
-            if (_ErrorMessenger != null)
-            {
-                _ErrorMessenger.Invoke(ex.Message);
-            }
-        }
-    }
-
-    public void IUClear()
-    {
-        try
-        {
-            Serial.Write("~        " +
-                         "c        " +
-                         "q        " +
-                         "ld       " +
-                         "le       " +
-                         "lf       " +
-                         "lg       " +
-                         "lh       " +
-                         "li       " +
-                         "lj       " +
-                         "lk       ");
-
-            SpriteEnabled = new bool[] { false, false, false, false, false, false, false, false };
-            SpritePosition = new int[][] { new int[] { 0, 0 }, new int[] { 0, 0 }, new int[] { 0, 0 }, new int[] { 0, 0 }, new int[] { 0, 0 }, new int[] { 0, 0 }, new int[] { 0, 0 }, new int[] { 0, 0 } };
-            Sprites = new ushort[8][][];
-            _Rectangles = new ushort[0][];
-            _Lines = new ushort[0][];
-            StaticChange = false;
-            SpriteChange = new bool[] { false, false, false, false, false, false, false, false };
-            SpritePositionChange = new bool[] { false, false, false, false, false, false, false, false };
-            SpriteEnabledChange = false;
-            SpriteStamp = new bool[] { false, false, false, false, false, false, false, false };
-            CursorPosition = new ushort[] { 0, 0 };
-            CursorEnabled = false;
-            CursorIntensity = 30;
-            CursorChange = false;
-        }
-        catch (Exception ex)
-        {
-            if (_ErrorMessenger != null)
-            {
-                _ErrorMessenger.Invoke(ex.Message);
-            }
+            disposedValue = true;
         }
     }
 
     public void Dispose()
     {
-        Serial.Close();
+        Dispose(disposing: true);
+        GC.SuppressFinalize(this);
     }
 }
