@@ -322,7 +322,7 @@ void line( int x0, int y0, int x1, int y1 )
   __asm__ ("usat    %[value], #12, %[value]\n\t" : [value] "+r" (x1));
   __asm__ ("usat    %[value], #12, %[value]\n\t" : [value] "+r" (y1));
 
-  //Bresenham's line algorithm (https://en.wikipedia.org/wiki/Bresenham%27s_line_algorithm#:~:text=to%20(x0%2C%20y0).-,plotLine(x0%2C%20y0%2C%20x1%2C%20y1),-dx%20%3D%20abs(x1)
+  //Bresenham's line algorithm (https://en.wikipedia.org/wiki/Bresenham%27s_line_algorithm).
   
   int dx = abs(x1 - x0);
   int sx = x0 < x1 ? 1 : -1;
