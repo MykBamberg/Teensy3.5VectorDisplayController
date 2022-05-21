@@ -8,7 +8,7 @@
   </PropertyGroup>
 
  <PropertyGroup>
-    <Version>1.1.1</Version>
+    <Version>1.1.2</Version>
     <Authors>00000000839a8e6886ab5951d76f411475428af</Authors>
     <Description>This package allows you to use an oscilloscope with an X-Y-mode as a vector display.</Description>
     <Copyright></Copyright>

@@ -396,6 +396,10 @@ public class VectorOutput : IDisposable
         return comboBox.Text;
     }
 
+    public static string[] GetComPorts()
+    {
+        return SerialPort.GetPortNames();
+    }
 
     protected virtual void Dispose(bool disposing)
     {
