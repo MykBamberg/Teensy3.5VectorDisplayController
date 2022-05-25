@@ -12,9 +12,9 @@ This code allows you to use a Teensy 3.5 and a vectorscope (oscilloscope on X-Y-
 Connect the pin labeled "DAC0" to the vectorscope's "X"-channel and the pin labeled "DAC1" to the "Y"-Channel. Afterward, you have to connect the Teensy's ground with the vectorscope's ground. ([Teensy 3.5 pinout](https://www.pjrc.com/teensy/card8a_rev3_web.pdf))
 
 # NuGet Package
-[NuGet-Release](https://www.nuget.org/packages/VectorOutput/1.1.1)
+[NuGet-Release](https://www.nuget.org/packages/VectorOutput/)
 
-Package Manager: ```Install-Package VectorOutput -Version 1.1.1```
+Package Manager: ```Install-Package VectorOutput -Version 1.1.2```
 
 # Usage
 Create a global ```VectorOutput``` variable:
