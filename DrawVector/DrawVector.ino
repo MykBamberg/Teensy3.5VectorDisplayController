@@ -1,5 +1,4 @@
-//Teensy Vector Monitor - Extended Syntax and Functionality
-
+//Teensy 3.5 Vector Display Controller
 #include "kinetis.h"
 #include "analog.c"
 
@@ -34,7 +33,7 @@ bool            cursorOn = false;
 
 void setup()
 {
-  Serial.begin(5000000);
+  Serial.begin(2500000);
   //DAC "initialization" copied from analog.c (Teensyduino)
   SIM_SCGC2 |= SIM_SCGC2_DAC0;
   DAC0_C0 = DAC_C0_DACEN | DAC_C0_DACRFS;
