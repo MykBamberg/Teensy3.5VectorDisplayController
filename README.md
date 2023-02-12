@@ -3,7 +3,7 @@ This code allows you to use a Teensy 3.5 and a vectorscope (oscilloscope on X-Y-
 
 # Firmware Installation
 
-1. Install the [Arduino IDE](https://www.arduino.cc/en/software) and [Teensyduino](https://www.pjrc.com/teensy/teensyduino.html)
+1. Install the [Arduino IDE](https://www.arduino.cc/en/software) and [Teensyduino](https://www.pjrc.com/teensy/teensyduino.html) ([Arduino IDE with Teensyduino for Arch based systems](https://aur.archlinux.org/packages/teensyduino))
 2. Extract DrawVector and open DrawVector.ino in the Arduino IDE
 3. Make sure that the Teensy 3.5 is connected and select it and its serial port under the "Tools" tab in the Arduino IDE
 4. Hit the upload button and wait for the code to compile and upload
