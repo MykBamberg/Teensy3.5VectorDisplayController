@@ -15,13 +15,13 @@ public class VectorOutput : IDisposable
 
     public VectorOutput(string ComPort)
     {
-        Serial = new SerialPort(ComPort, 50000000);
+        Serial = new SerialPort(ComPort, 25000000);
         Serial.Open();
     }
 
     public VectorOutput(string ComPort, ErrorMessenger errorMessenger)
     {
-        Serial = new SerialPort(ComPort, 50000000);
+        Serial = new SerialPort(ComPort, 25000000);
         Serial.Open();
         _ErrorMessenger = errorMessenger;
     }
