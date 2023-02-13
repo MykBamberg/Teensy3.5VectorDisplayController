@@ -357,45 +357,6 @@ public class VectorOutput : IDisposable
         }
     }
 
-    public static string? ComPortForm()
-    {
-        Form prompt = new Form()
-        {
-            Width = 350,
-            Height = 150,
-            FormBorderStyle = FormBorderStyle.FixedDialog,
-            Text = "COM port selection",
-            StartPosition = FormStartPosition.CenterScreen
-        };
-
-        string[] comPorts = SerialPort.GetPortNames();
-
-        Label label = new Label() { Left = 50, Top = 20, Text = "Select Teensy port" };
-
-        ComboBox comboBox = new ComboBox() { Left = 50, Top = 15, Width = 250 };
-        comboBox.Items.AddRange(comPorts);
-
-        Button OKButton = new Button() { Text = "Ok", Left = 200, Width = 100, Top = 70, DialogResult = DialogResult.OK };
-        OKButton.Click += (sender, e) => { prompt.Close(); };
-
-        prompt.Controls.Add(comboBox);
-        prompt.Controls.Add(OKButton);
-        prompt.Controls.Add(label);
-        prompt.AcceptButton = OKButton;
-
-        if (prompt.ShowDialog() != DialogResult.OK)
-        {
-            return null;
-        }
-
-        if (!comPorts.Contains(comboBox.Text))
-        {
-            return null;
-        }
-
-        return comboBox.Text;
-    }
-
     public static string[] GetComPorts()
     {
         return SerialPort.GetPortNames();
