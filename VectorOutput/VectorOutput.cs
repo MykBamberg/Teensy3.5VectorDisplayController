@@ -1,5 +1,4 @@
-﻿using System.Windows.Forms;
-using System.IO.Ports;
+﻿using System.IO.Ports;
 
 public class VectorOutput : IDisposable
 {
