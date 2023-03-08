@@ -14,9 +14,7 @@ Connect the pin labeled "DAC0" to the vectorscope's "X"-channel and the pin labe
 # NuGet Package
 [NuGet-Release](https://www.nuget.org/packages/VectorOutput/)
 
-Package Manager: ```Install-Package VectorOutput -Version 1.1.2```
-
-note: the package on nuget.org is currently outdated, please compile it yourself
+Package Manager: ```Install-Package VectorOutput -Version 1.1.3```
 
 # Usage
 Create a global ```VectorOutput``` variable:
