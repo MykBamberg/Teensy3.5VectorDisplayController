@@ -1,3 +1,6 @@
+IMPORTANT NOTE: The Teensy 3.5 will most likely be discontinued soon. "PJRC recommends use of Teensy 4.0 / 4.1 for new projects. We do not believe supply of chips for Teensy 3.x is likely to ever fully recover. These chips are made with 90 nm silicon process. Most of the world's semiconductor fabs are focusing on 45 nm or smaller, leaving limited supply for older chips. We anticipate the cost of these chips is likely to increase as the supply continues to dwindle."
+I recommend to only use this for personal projects.
+
 # Teensy3.5VectorDisplayController
 This code allows you to use a Teensy 3.5 and a vectorscope (oscilloscope on X-Y-mode) as a vector display.
 
